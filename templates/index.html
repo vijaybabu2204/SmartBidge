@@ -1,0 +1,1428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OptiCrop - AI Agricultural Optimization Engine</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            /* Theme colors */
+            --bg-dark: #070a13;
+            --bg-card: rgba(15, 23, 42, 0.65);
+            --border-light: rgba(255, 255, 255, 0.08);
+            --border-glow: rgba(99, 102, 241, 0.15);
+            
+            /* Text colors */
+            --text-title: #ffffff;
+            --text-body: #9ca3af;
+            --text-muted: #6b7280;
+            
+            /* Accent gradients */
+            --accent-primary: #10b981; /* Emerald */
+            --accent-secondary: #6366f1; /* Indigo */
+            --accent-purple: #8b5cf6; /* Violet */
+            --accent-glow: rgba(99, 102, 241, 0.25);
+            
+            /* Sensor/Nutrient colors */
+            --color-n: #10b981;
+            --color-p: #f59e0b;
+            --color-k: #8b5cf6;
+            --color-temp: #f43f5e;
+            --color-humid: #0ea5e9;
+            --color-ph: #ec4899;
+            --color-rain: #06b6d4;
+            
+            --font-outfit: 'Outfit', sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: var(--font-outfit);
+            background-color: var(--bg-dark);
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(16, 185, 129, 0.12) 0px, transparent 50%),
+                radial-gradient(at 100% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%),
+                radial-gradient(at 50% 100%, rgba(139, 92, 246, 0.1) 0px, transparent 50%);
+            background-attachment: fixed;
+            color: var(--text-title);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow-x: hidden;
+            padding-bottom: 3rem;
+        }
+
+        /* Floating Navbar */
+        header {
+            width: 100%;
+            max-width: 1120px;
+            padding: 1.25rem 2rem;
+            position: sticky;
+            top: 1rem;
+            z-index: 100;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(15, 23, 42, 0.5);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--border-light);
+            border-radius: 20px;
+            margin: 1rem auto 2rem auto;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        @media (max-width: 768px) {
+            header {
+                flex-direction: column;
+                gap: 1rem;
+                margin: 1rem;
+                padding: 1rem;
+                width: calc(100% - 2rem);
+            }
+        }
+
+        .nav-logo {
+            font-size: 1.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #34d399 0%, #818cf8 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .nav-logo .emoji {
+            font-size: 1.7rem;
+            -webkit-text-fill-color: initial;
+            filter: drop-shadow(0 0 8px rgba(52, 211, 153, 0.3));
+        }
+
+        nav {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .nav-link {
+            padding: 0.6rem 1.2rem;
+            color: var(--text-body);
+            text-decoration: none;
+            font-size: 0.95rem;
+            font-weight: 600;
+            border-radius: 12px;
+            transition: all 0.25s ease;
+            cursor: pointer;
+            border: 1px solid transparent;
+        }
+
+        .nav-link:hover {
+            color: #ffffff;
+            background: rgba(255, 255, 255, 0.04);
+        }
+
+        .nav-link.active {
+            color: #ffffff;
+            background: rgba(99, 102, 241, 0.15);
+            border-color: rgba(99, 102, 241, 0.25);
+            box-shadow: 0 0 15px rgba(99, 102, 241, 0.1);
+        }
+
+        /* Tab Content Sections */
+        .tab-section {
+            width: 100%;
+            max-width: 1120px;
+            padding: 0 1rem;
+            display: none;
+            animation: tabFadeIn 0.5s ease-out forwards;
+        }
+
+        .tab-section.active-view {
+            display: block;
+        }
+
+        @keyframes tabFadeIn {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* HOME TAB STYLES */
+        .hero-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-light);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border-radius: 28px;
+            padding: 4rem 3rem;
+            text-align: center;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+            position: relative;
+            overflow: hidden;
+            margin-bottom: 2rem;
+        }
+
+        .hero-card::before {
+            content: '';
+            position: absolute;
+            top: -20%;
+            left: -20%;
+            width: 140%;
+            height: 6px;
+            background: linear-gradient(90deg, #10b981, #6366f1, #a855f7);
+            filter: blur(5px);
+        }
+
+        .hero-title {
+            font-size: 2.8rem;
+            font-weight: 800;
+            line-height: 1.2;
+            margin-bottom: 1.5rem;
+            background: linear-gradient(135deg, #ffffff 40%, #a78bfa 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        @media (max-width: 768px) {
+            .hero-title { font-size: 2rem; }
+            .hero-card { padding: 2.5rem 1.5rem; }
+        }
+
+        .hero-tagline {
+            font-size: 1.25rem;
+            color: var(--text-body);
+            max-width: 800px;
+            margin: 0 auto 2.5rem auto;
+            line-height: 1.6;
+            font-weight: 400;
+        }
+
+        .hero-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 1rem 2rem;
+            background: linear-gradient(135deg, #10b981 0%, #6366f1 100%);
+            color: #ffffff;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 1.05rem;
+            border-radius: 14px;
+            box-shadow: 0 10px 25px rgba(99, 102, 241, 0.3);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border: none;
+        }
+
+        .hero-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 30px rgba(99, 102, 241, 0.4);
+            filter: brightness(1.15);
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+            margin-top: 1rem;
+        }
+
+        @media (max-width: 840px) {
+            .features-grid { grid-template-columns: 1fr; }
+        }
+
+        .feature-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border-light);
+            border-radius: 20px;
+            padding: 2rem;
+            transition: all 0.3s ease;
+        }
+
+        .feature-card:hover {
+            border-color: rgba(99, 102, 241, 0.2);
+            transform: translateY(-5px);
+            background: rgba(255, 255, 255, 0.03);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+        }
+
+        .feature-icon {
+            font-size: 2.2rem;
+            margin-bottom: 1rem;
+        }
+
+        .feature-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 0.75rem;
+            color: #ffffff;
+        }
+
+        .feature-desc {
+            font-size: 0.9rem;
+            color: var(--text-body);
+            line-height: 1.5;
+        }
+
+
+        /* ABOUT TAB STYLES */
+        .about-grid {
+            display: grid;
+            grid-template-columns: 1.2fr 1fr;
+            gap: 2rem;
+            align-items: center;
+            background: var(--bg-card);
+            border: 1px solid var(--border-light);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border-radius: 28px;
+            padding: 3rem;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+        }
+
+        @media (max-width: 920px) {
+            .about-grid {
+                grid-template-columns: 1fr;
+                padding: 2rem;
+            }
+        }
+
+        .about-content {
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+        }
+
+        .about-heading {
+            font-size: 2.2rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #ffffff 40%, #60a5fa 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            line-height: 1.25;
+        }
+
+        .about-text {
+            font-size: 0.95rem;
+            color: #d1d5db;
+            line-height: 1.65;
+            text-align: justify;
+        }
+
+        .about-media-wrapper {
+            position: relative;
+            border-radius: 20px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
+        }
+
+        .about-image {
+            width: 100%;
+            height: auto;
+            display: block;
+            object-fit: cover;
+            transition: transform 0.5s ease;
+        }
+
+        .about-media-wrapper:hover .about-image {
+            transform: scale(1.04);
+        }
+
+        .about-image-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(to top, rgba(7, 10, 19, 0.95) 0%, transparent 100%);
+            padding: 1.5rem;
+            text-align: center;
+        }
+
+        .about-image-caption {
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: #ffffff;
+            letter-spacing: 0.5px;
+        }
+
+
+        /* FIND YOUR CROP (PREDICTION) TAB STYLES */
+        .prediction-dashboard {
+            display: grid;
+            grid-template-columns: 400px 1fr;
+            gap: 1.5rem;
+        }
+
+        @media (max-width: 960px) {
+            .prediction-dashboard {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Glassmorphic Side Panel (Left) */
+        .side-panel {
+            background: var(--bg-card);
+            border: 1px solid var(--border-light);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border-radius: 24px;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .side-panel::before {
+            content: '';
+            position: absolute;
+            top: -10%;
+            left: -10%;
+            width: 120%;
+            height: 5px;
+            background: linear-gradient(90deg, var(--color-n), var(--color-humid), var(--color-k));
+            filter: blur(4px);
+        }
+
+        .panel-brand-header {
+            margin-bottom: 2rem;
+        }
+
+        .panel-brand-logo {
+            font-size: 1.8rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .system-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            padding: 0.35rem 0.75rem;
+            border-radius: 99px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--accent-primary);
+            font-family: var(--font-mono);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background-color: var(--accent-primary);
+            border-radius: 50%;
+            box-shadow: 0 0 8px var(--accent-primary);
+            animation: pulse 1.8s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.9); opacity: 0.6; }
+            50% { transform: scale(1.15); opacity: 1; box-shadow: 0 0 14px var(--accent-primary); }
+            100% { transform: scale(0.9); opacity: 0.6; }
+        }
+
+        /* NPK Visualizer Widget */
+        .npk-widget {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            border-radius: 16px;
+            padding: 1.25rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .npk-widget-title {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-body);
+            margin-bottom: 1rem;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        .npk-bars {
+            display: flex;
+            justify-content: space-around;
+            align-items: flex-end;
+            height: 120px;
+            padding-bottom: 0.5rem;
+        }
+
+        .npk-column {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100%;
+            justify-content: flex-end;
+            width: 45px;
+        }
+
+        .npk-bar-track {
+            width: 14px;
+            height: 90px;
+            background: rgba(255, 255, 255, 0.04);
+            border-radius: 99px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .npk-bar-fill {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            border-radius: 99px;
+            transition: height 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .fill-n { background: linear-gradient(to top, #065f46, var(--color-n)); box-shadow: 0 0 10px rgba(16, 185, 129, 0.3); }
+        .fill-p { background: linear-gradient(to top, #92400e, var(--color-p)); box-shadow: 0 0 10px rgba(245, 158, 11, 0.3); }
+        .fill-k { background: linear-gradient(to top, #5b21b6, var(--color-k)); box-shadow: 0 0 10px rgba(139, 92, 246, 0.3); }
+
+        .npk-label {
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            font-weight: 700;
+            margin-top: 0.5rem;
+        }
+        .label-n { color: var(--color-n); }
+        .label-p { color: var(--color-p); }
+        .label-k { color: var(--color-k); }
+
+        .npk-value {
+            font-size: 0.75rem;
+            color: var(--text-body);
+        }
+
+        /* Presets */
+        .presets-section {
+            margin-bottom: 1.5rem;
+        }
+
+        .presets-title {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-body);
+            margin-bottom: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .preset-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem;
+        }
+
+        .preset-btn {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 12px;
+            padding: 0.75rem;
+            color: var(--text-title);
+            font-family: var(--font-outfit);
+            text-align: left;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .preset-btn:hover {
+            background: rgba(99, 102, 241, 0.1);
+            border-color: rgba(99, 102, 241, 0.3);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+        }
+
+        .preset-crop-name {
+            font-size: 0.95rem;
+            font-weight: 700;
+        }
+
+        .preset-desc {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .concept-note {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            line-height: 1.4;
+            border-left: 2px solid var(--accent-secondary);
+            padding-left: 0.75rem;
+        }
+
+        /* Right Panel: Profiler Form */
+        .main-panel {
+            background: var(--bg-card);
+            border: 1px solid var(--border-light);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border-radius: 24px;
+            padding: 2.5rem;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .form-title-area {
+            margin-bottom: 2rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            padding-bottom: 1.25rem;
+        }
+
+        .form-title {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: #ffffff;
+            margin-bottom: 0.35rem;
+            background: linear-gradient(135deg, #ffffff 60%, #a78bfa 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-style: italic;
+        }
+
+        .form-desc {
+            font-size: 0.95rem;
+            color: var(--text-body);
+        }
+
+        .grid-sliders {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            margin-bottom: 2.5rem;
+        }
+
+        @media (max-width: 640px) {
+            .grid-sliders {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .slider-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .slider-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .slider-label {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #e5e7eb;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .slider-numeric-input {
+            width: 75px;
+            padding: 0.35rem 0.5rem;
+            background: rgba(17, 24, 39, 0.8);
+            border: 1px solid var(--border-light);
+            border-radius: 8px;
+            color: #ffffff;
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            font-weight: bold;
+            text-align: center;
+            outline: none;
+            transition: all 0.2s ease;
+        }
+
+        .slider-numeric-input:focus {
+            border-color: var(--accent-secondary);
+            box-shadow: 0 0 5px rgba(99, 102, 241, 0.4);
+        }
+
+        .slider-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .slider-control {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 6px;
+            border-radius: 99px;
+            background: rgba(255, 255, 255, 0.06);
+            outline: none;
+            transition: background 0.3s ease;
+        }
+
+        .slider-control::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+            box-shadow: 0 0 8px rgba(0, 0, 0, 0.5);
+        }
+
+        .slider-control::-webkit-slider-thumb:hover {
+            transform: scale(1.25);
+        }
+
+        /* Color profiles for sliders */
+        .slider-n::-webkit-slider-thumb { background: var(--color-n); box-shadow: 0 0 8px var(--color-n); }
+        .slider-p::-webkit-slider-thumb { background: var(--color-p); box-shadow: 0 0 8px var(--color-p); }
+        .slider-k::-webkit-slider-thumb { background: var(--color-k); box-shadow: 0 0 8px var(--color-k); }
+        .slider-temp::-webkit-slider-thumb { background: var(--color-temp); box-shadow: 0 0 8px var(--color-temp); }
+        .slider-humid::-webkit-slider-thumb { background: var(--color-humid); box-shadow: 0 0 8px var(--color-humid); }
+        .slider-ph::-webkit-slider-thumb { background: var(--color-ph); box-shadow: 0 0 8px var(--color-ph); }
+        .slider-rain::-webkit-slider-thumb { background: var(--color-rain); box-shadow: 0 0 8px var(--color-rain); }
+
+        .slider-unit {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            width: 35px;
+            text-align: right;
+        }
+
+        .predict-btn-container {
+            width: 100%;
+            position: relative;
+        }
+
+        .btn-glow-container {
+            position: relative;
+            z-index: 1;
+        }
+
+        .btn-glow-container::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            right: 2px;
+            bottom: 2px;
+            background: linear-gradient(135deg, #10b981 0%, #6366f1 100%);
+            border-radius: 16px;
+            z-index: -1;
+            filter: blur(12px);
+            opacity: 0.6;
+            transition: opacity 0.3s ease;
+        }
+
+        .btn-predict {
+            width: 100%;
+            padding: 1.15rem;
+            background: linear-gradient(135deg, #059669 0%, #4f46e5 100%);
+            border: none;
+            border-radius: 16px;
+            color: white;
+            font-family: var(--font-outfit);
+            font-size: 1.2rem;
+            font-weight: 800;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.6rem;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-predict:hover {
+            transform: translateY(-2px);
+            filter: brightness(1.1);
+        }
+
+        /* Results Display */
+        .overlay-result-container {
+            margin-top: 2.25rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            padding-top: 2.25rem;
+            display: none;
+            opacity: 0;
+            transform: translateY(15px);
+            transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .overlay-result-container.show {
+            display: block;
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .result-layout {
+            display: grid;
+            grid-template-columns: 140px 1fr;
+            gap: 2rem;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 1.75rem;
+            border-radius: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .result-layout::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: linear-gradient(to bottom, #10b981, #6366f1);
+        }
+
+        @media (max-width: 540px) {
+            .result-layout {
+                grid-template-columns: 1fr;
+                justify-items: center;
+                text-align: center;
+            }
+            .result-layout::before {
+                width: 100%;
+                height: 4px;
+                top: 0;
+                left: 0;
+            }
+        }
+
+        .gauge-wrapper {
+            position: relative;
+            width: 120px;
+            height: 120px;
+        }
+
+        .svg-gauge {
+            transform: rotate(-90deg);
+        }
+
+        .gauge-bg {
+            fill: none;
+            stroke: rgba(255, 255, 255, 0.04);
+            stroke-width: 8;
+        }
+
+        .gauge-fill {
+            fill: none;
+            stroke: url(#gaugeGradient);
+            stroke-width: 8;
+            stroke-linecap: round;
+            stroke-dasharray: 339.292;
+            stroke-dashoffset: 339.292;
+            transition: stroke-dashoffset 1.4s cubic-bezier(0.1, 0.8, 0.2, 1);
+        }
+
+        .gauge-percentage {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-family: var(--font-mono);
+            font-weight: 800;
+            font-size: 1.35rem;
+            color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .gauge-pct-lbl {
+            font-family: var(--font-outfit);
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+
+        .result-report {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .report-header {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-body);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .report-crop {
+            font-size: 2.2rem;
+            font-weight: 800;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            text-shadow: 0 0 20px rgba(52, 211, 153, 0.2);
+        }
+
+        .report-explanation {
+            font-size: 0.9rem;
+            color: var(--text-body);
+            line-height: 1.5;
+        }
+
+        /* Loading */
+        .analysis-loader {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            padding: 2.5rem;
+            background: rgba(11, 15, 25, 0.85);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            margin-top: 2.25rem;
+        }
+
+        .radar-spinner {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: conic-gradient(from 0deg, transparent 50%, var(--accent-secondary) 100%);
+            position: relative;
+            animation: rotateRadar 1s linear infinite;
+        }
+
+        .radar-spinner::after {
+            content: '';
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            right: 3px;
+            bottom: 3px;
+            background: var(--bg-dark);
+            border-radius: 50%;
+        }
+
+        @keyframes rotateRadar {
+            to { transform: rotate(360deg); }
+        }
+
+        .loader-text {
+            font-size: 1rem;
+            color: #e5e7eb;
+            font-family: var(--font-mono);
+            letter-spacing: 0.5px;
+            animation: pulseText 1.5s infinite;
+        }
+
+        @keyframes pulseText {
+            0%, 100% { opacity: 0.6; }
+            50% { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header Navigation bar matching specifications -->
+    <header>
+        <div class="nav-logo">
+            <span class="emoji">🌱</span> OptiCrop
+        </div>
+        <nav>
+            <a class="nav-link active" onclick="switchTab(event, 'home-view')">Home</a>
+            <a class="nav-link" onclick="switchTab(event, 'about-view')">About</a>
+            <a class="nav-link" onclick="switchTab(event, 'predict-view')">FindYourCrop</a>
+        </nav>
+    </header>
+
+    <!-- 1. HOME TAB VIEW -->
+    <section id="home-view" class="tab-section active-view">
+        <div class="hero-card">
+            <h2 class="hero-title">OptiCrop: Smart Agricultural Production Optimization Engine</h2>
+            <p class="hero-tagline">
+                The main purpose of the OptiCrop aims to develop an advanced software system that utilizes data-driven insights to optimize agricultural production for different crops.
+            </p>
+            <button class="hero-btn" onclick="goToPredictTab()">
+                🚀 Launch Prediction Engine
+            </button>
+        </div>
+
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">🤖</div>
+                <h4 class="feature-title">Random Forest Classifier</h4>
+                <p class="feature-desc">Utilizes advanced scikit-learn models achieving 99.3% accuracy to analyze multi-dimensional soil indices.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">💧</div>
+                <h4 class="feature-title">Climate Calibration</h4>
+                <p class="feature-desc">Dynamically weighs rainfall thresholds and humidity variables to calculate the absolute optimal crop fit.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">📈</div>
+                <h4 class="feature-title">Yield Optimization</h4>
+                <p class="feature-desc">Improves resource allocation, helping farmers optimize soil N-P-K profiles and reduce fertilizer waste.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- 2. ABOUT TAB VIEW -->
+    <section id="about-view" class="tab-section">
+        <div class="about-grid">
+            <div class="about-content">
+                <h2 class="about-heading">Opti Crop Smart Agricultural Optimization Using ML</h2>
+                <p class="about-text">
+                    The project "Opti Crop: Smart Agricultural Production Optimization Engine" aims to develop an advanced software system that utilizes data-driven insights to optimize agricultural production for different crops. By integrating key environmental factors such as Nitrogen (N), Phosphorous (P), Potassium (K) levels, soil temperature, humidity, pH, rainfall, and crop types, Opti Crop seeks to provide intelligent recommendations to farmers for maximizing yields and resource efficiency.
+                </p>
+                <p class="about-text">
+                    The knowledge and insights gained through the Opti Crop project can be utilized by agricultural researchers, policymakers, and stakeholders to advance the understanding of crop-environment interactions and inform the development of evidence-based agricultural strategies.
+                </p>
+                <p class="about-text">
+                    The Opti Crop project revolutionizes agricultural practices by providing farmers with a smart production optimization engine. By integrating key environmental factors and crop-specific recommendations, Opti Crop enables farmers to achieve optimal yields, improve resource efficiency, and contribute to sustainable agricultural practices.
+                </p>
+            </div>
+            <div class="about-media-wrapper">
+                <img src="/static/images/farmer.jpg" alt="Indian Farmer" class="about-image">
+                <div class="about-image-overlay">
+                    <div class="about-image-caption">Empowering Farmers through Machine Learning Insights</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 3. FIND YOUR CROP (PREDICTION) TAB VIEW -->
+    <section id="predict-view" class="tab-section">
+        <div class="prediction-dashboard">
+            
+            <!-- Left Panel (Sidebar metrics & presets) -->
+            <aside class="side-panel">
+                <div>
+                    <div class="panel-brand-header">
+                        <h3 class="panel-brand-logo">🌱 OptiCrop Dashboard</h3>
+                        <div class="system-status">
+                            <div class="status-dot"></div>
+                            <span>AI CORE: ACTIVE</span>
+                        </div>
+                    </div>
+
+                    <!-- Soil Nutrient Graph Widget -->
+                    <div class="npk-widget">
+                        <h4 class="npk-widget-title">Soil Nutrient Balance</h4>
+                        <div class="npk-bars">
+                            <div class="npk-column">
+                                <span class="npk-value" id="val-n-lbl">90</span>
+                                <div class="npk-bar-track">
+                                    <div class="npk-bar-fill fill-n" id="bar-n" style="height: 60%;"></div>
+                                </div>
+                                <span class="npk-label label-n">N</span>
+                            </div>
+                            <div class="npk-column">
+                                <span class="npk-value" id="val-p-lbl">42</span>
+                                <div class="npk-bar-track">
+                                    <div class="npk-bar-fill fill-p" id="bar-p" style="height: 29%;"></div>
+                                </div>
+                                <span class="npk-label label-p">P</span>
+                            </div>
+                            <div class="npk-column">
+                                <span class="npk-value" id="val-k-lbl">43</span>
+                                <div class="npk-bar-track">
+                                    <div class="npk-bar-fill fill-k" id="bar-k" style="height: 14%;"></div>
+                                </div>
+                                <span class="npk-label label-k">K</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Presets scenario deck -->
+                    <div class="presets-section">
+                        <h4 class="presets-title">Simulation Presets</h4>
+                        <div class="preset-grid">
+                            <button type="button" class="preset-btn" onclick="applyPreset('rice')">
+                                <span class="preset-crop-name">🌾 Rice Preset</span>
+                                <span class="preset-desc">Humid, high water</span>
+                            </button>
+                            <button type="button" class="preset-btn" onclick="applyPreset('coffee')">
+                                <span class="preset-crop-name">☕ Coffee Preset</span>
+                                <span class="preset-desc">Cool, moderate rain</span>
+                            </button>
+                            <button type="button" class="preset-btn" onclick="applyPreset('watermelon')">
+                                <span class="preset-crop-name">🍉 Watermelon</span>
+                                <span class="preset-desc">Hot, dry conditions</span>
+                            </button>
+                            <button type="button" class="preset-btn" onclick="applyPreset('banana')">
+                                <span class="preset-crop-name">🍌 Banana Preset</span>
+                                <span class="preset-desc">Humid, high potassium</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="concept-note">
+                    Predict crops locally using soil attributes calibrated against the Random Forest classifier.
+                </div>
+            </aside>
+
+            <!-- Right Panel (Actual Predict Inputs) -->
+            <main class="main-panel">
+                <div>
+                    <div class="form-title-area">
+                        <h2 class="form-title">Find Your Best Crop Here</h2>
+                        <p class="form-desc">Please enter the environmental and soil conditions below.</p>
+                    </div>
+
+                    <form id="opti-predict-form">
+                        <div class="grid-sliders">
+                            
+                            <!-- Nitrogen -->
+                            <div class="slider-group">
+                                <div class="slider-header">
+                                    <label class="slider-label" style="color: var(--color-n)">🟢 Nitrogen (N)</label>
+                                    <input type="number" step="any" class="slider-numeric-input" id="num-n" min="0" max="150" value="90">
+                                </div>
+                                <div class="slider-wrapper">
+                                    <input type="range" class="slider-control slider-n" id="slide-n" min="0" max="150" value="90">
+                                    <span class="slider-unit">ratio</span>
+                                </div>
+                            </div>
+
+                            <!-- Phosphorus -->
+                            <div class="slider-group">
+                                <div class="slider-header">
+                                    <label class="slider-label" style="color: var(--color-p)">🟡 Phosphorus (P)</label>
+                                    <input type="number" step="any" class="slider-numeric-input" id="num-p" min="5" max="145" value="42">
+                                </div>
+                                <div class="slider-wrapper">
+                                    <input type="range" class="slider-control slider-p" id="slide-p" min="5" max="145" value="42">
+                                    <span class="slider-unit">ratio</span>
+                                </div>
+                            </div>
+
+                            <!-- Potassium -->
+                            <div class="slider-group">
+                                <div class="slider-header">
+                                    <label class="slider-label" style="color: var(--color-k)">🟣 Potassium (K)</label>
+                                    <input type="number" step="any" class="slider-numeric-input" id="num-k" min="5" max="205" value="43">
+                                </div>
+                                <div class="slider-wrapper">
+                                    <input type="range" class="slider-control slider-k" id="slide-k" min="5" max="205" value="43">
+                                    <span class="slider-unit">ratio</span>
+                                </div>
+                            </div>
+
+                            <!-- Temperature -->
+                            <div class="slider-group">
+                                <div class="slider-header">
+                                    <label class="slider-label" style="color: var(--color-temp)">🔴 Temperature</label>
+                                    <input type="number" step="any" class="slider-numeric-input" id="num-temp" min="8" max="45" value="21.0">
+                                </div>
+                                <div class="slider-wrapper">
+                                    <input type="range" class="slider-control slider-temp" id="slide-temp" min="8" max="45" step="0.1" value="21.0">
+                                    <span class="slider-unit">°C</span>
+                                </div>
+                            </div>
+
+                            <!-- Humidity -->
+                            <div class="slider-group">
+                                <div class="slider-header">
+                                    <label class="slider-label" style="color: var(--color-humid)">🔵 Humidity</label>
+                                    <input type="number" step="any" class="slider-numeric-input" id="num-humid" min="14" max="100" value="82.0">
+                                </div>
+                                <div class="slider-wrapper">
+                                    <input type="range" class="slider-control slider-humid" id="slide-humid" min="14" max="100" step="0.1" value="82.0">
+                                    <span class="slider-unit">%</span>
+                                </div>
+                            </div>
+
+                            <!-- pH -->
+                            <div class="slider-group">
+                                <div class="slider-header">
+                                    <label class="slider-label" style="color: var(--color-ph)">💗 pH Level</label>
+                                    <input type="number" step="0.01" class="slider-numeric-input" id="num-ph" min="3.5" max="10.0" value="6.5">
+                                </div>
+                                <div class="slider-wrapper">
+                                    <input type="range" class="slider-control slider-ph" id="slide-ph" min="3.5" max="10.0" step="0.1" value="6.5">
+                                    <span class="slider-unit">pH</span>
+                                </div>
+                            </div>
+
+                            <!-- Rainfall -->
+                            <div class="slider-group" style="grid-column: span 2;">
+                                <div class="slider-header">
+                                    <label class="slider-label" style="color: var(--color-rain)">🌊 Average Rainfall</label>
+                                    <input type="number" step="any" class="slider-numeric-input" id="num-rain" min="20" max="300" value="202.9">
+                                </div>
+                                <div class="slider-wrapper">
+                                    <input type="range" class="slider-control slider-rain" id="slide-rain" min="20" max="300" step="0.1" value="202.9">
+                                    <span class="slider-unit">mm</span>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <!-- Predict Button -->
+                        <div class="predict-btn-container">
+                            <div class="btn-glow-container">
+                                <button type="submit" class="btn-predict" id="predict-btn">
+                                    Predict
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Radar Loader -->
+                <div class="analysis-loader" id="loader-section">
+                    <div class="radar-spinner"></div>
+                    <div class="loader-text">Analyzing Conditions...</div>
+                </div>
+
+                <!-- Report Section -->
+                <div class="overlay-result-container" id="result-section">
+                    <div class="result-layout">
+                        <!-- Gauge SVG -->
+                        <div class="gauge-wrapper">
+                            <svg class="svg-gauge" width="120" height="120">
+                                <defs>
+                                    <linearGradient id="gaugeGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                        <stop offset="0%" stop-color="#10b981" />
+                                        <stop offset="50%" stop-color="#6366f1" />
+                                        <stop offset="100%" stop-color="#a855f7" />
+                                    </linearGradient>
+                                </defs>
+                                <circle class="gauge-bg" cx="60" cy="60" r="54"></circle>
+                                <circle class="gauge-fill" id="gauge-ring" cx="60" cy="60" r="54"></circle>
+                            </svg>
+                            <div class="gauge-percentage">
+                                <span id="result-confidence">98%</span>
+                                <span class="gauge-pct-lbl">Confidence</span>
+                            </div>
+                        </div>
+
+                        <!-- Report Card -->
+                        <div class="result-report">
+                            <span class="report-header">Optimal Crop Recommendation</span>
+                            <div class="report-crop" id="result-crop">🌾 Rice</div>
+                            <p class="report-explanation" id="result-explanation">
+                                The current environment exhibits ideal conditions. Wet, highly humid soil matched with rich nitrogen values fosters optimal health for this recommendation.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </section>
+
+    <script>
+        // Tab Switcher Logic
+        function switchTab(event, tabId) {
+            // Remove active classes
+            document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+            document.querySelectorAll('.tab-section').forEach(section => section.classList.remove('active-view'));
+
+            // Set active states
+            event.currentTarget.classList.add('active');
+            document.getElementById(tabId).classList.add('active-view');
+        }
+
+        function goToPredictTab() {
+            // Simulate navigation link click for FindYourCrop
+            const predictLink = document.querySelector('nav a:nth-child(3)');
+            predictLink.click();
+        }
+
+        // Preset configurations
+        const PRESETS = {
+            rice: { N: 90, P: 42, K: 43, temp: 21.0, humidity: 82.0, ph: 6.50, rain: 202.9 },
+            coffee: { N: 100, P: 30, K: 30, temp: 25.0, humidity: 55.0, ph: 6.20, rain: 150.0 },
+            watermelon: { N: 20, P: 10, K: 50, temp: 28.0, humidity: 85.0, ph: 6.00, rain: 50.0 },
+            banana: { N: 80, P: 80, K: 100, temp: 27.0, humidity: 90.0, ph: 5.80, rain: 100.0 }
+        };
+
+        // Sync inputs helper
+        function syncControl(sliderId, numberId, key, updater) {
+            const slider = document.getElementById(sliderId);
+            const number = document.getElementById(numberId);
+
+            slider.addEventListener('input', (e) => {
+                number.value = parseFloat(e.target.value).toFixed(slider.step.includes('.') ? slider.step.split('.')[1].length : 0);
+                updater();
+            });
+
+            number.addEventListener('input', (e) => {
+                let val = parseFloat(e.target.value);
+                if (isNaN(val)) return;
+                
+                // Clamp input to slider bounds
+                const min = parseFloat(slider.min);
+                const max = parseFloat(slider.max);
+                if (val < min) val = min;
+                if (val > max) val = max;
+                
+                slider.value = val;
+                updater();
+            });
+        }
+
+        // Live NPK Chart Updates
+        function updateNPKWidget() {
+            const nVal = parseFloat(document.getElementById('slide-n').value);
+            const pVal = parseFloat(document.getElementById('slide-p').value);
+            const kVal = parseFloat(document.getElementById('slide-k').value);
+
+            // Update numerical text labels
+            document.getElementById('val-n-lbl').innerText = Math.round(nVal);
+            document.getElementById('val-p-lbl').innerText = Math.round(pVal);
+            document.getElementById('val-k-lbl').innerText = Math.round(kVal);
+
+            // Set height percentages (relative to slider max value)
+            document.getElementById('bar-n').style.height = `${(nVal / 150) * 100}%`;
+            document.getElementById('bar-p').style.height = `${(pVal / 145) * 100}%`;
+            document.getElementById('bar-k').style.height = `${(kVal / 205) * 100}%`;
+        }
+
+        // Setup synchronization for each control
+        syncControl('slide-n', 'num-n', 'N', updateNPKWidget);
+        syncControl('slide-p', 'num-p', 'P', updateNPKWidget);
+        syncControl('slide-k', 'num-k', 'K', updateNPKWidget);
+        syncControl('slide-temp', 'num-temp', 'temp', () => {});
+        syncControl('slide-humid', 'num-humid', 'humid', () => {});
+        syncControl('slide-ph', 'num-ph', 'ph', () => {});
+        syncControl('slide-rain', 'num-rain', 'rain', () => {});
+
+        // Applies preset with animation
+        function applyPreset(key) {
+            const preset = PRESETS[key];
+            if (!preset) return;
+
+            animateValueSync('slide-n', 'num-n', preset.N);
+            animateValueSync('slide-p', 'num-p', preset.P);
+            animateValueSync('slide-k', 'num-k', preset.K);
+            animateValueSync('slide-temp', 'num-temp', preset.temp);
+            animateValueSync('slide-humid', 'num-humid', preset.humidity);
+            animateValueSync('slide-ph', 'num-ph', preset.ph);
+            animateValueSync('slide-rain', 'num-rain', preset.rain);
+
+            // Trigger visualizer update
+            setTimeout(updateNPKWidget, 100);
+        }
+
+        function animateValueSync(sliderId, numberId, targetVal) {
+            const slider = document.getElementById(sliderId);
+            const number = document.getElementById(numberId);
+            
+            slider.value = targetVal;
+            number.value = targetVal;
+        }
+
+        // Explanation text database
+        const EXPLANATIONS = {
+            rice: "This profile shows exceptionally high humidity (>80%) and high rainfall requirements. Submerged soil condition with high nitrogen index provides optimal development parameters.",
+            coffee: "Favorable cool temperatures (20-25°C), acidic-leaning soil pH (~6.2), and moderate moisture levels are outstanding for rich coffee berry yields.",
+            watermelon: "Warm climate, lower soil nutrients demand, and light rainfall prevent root moisture saturation, supporting ideal sugar development in Muskmelons & Watermelons.",
+            banana: "Tropical climates with heavy precipitation and heavy potash (Potassium) levels are vital for strong stalk architecture and leaf canopy growth.",
+            cotton: "High temperature, low rainfall, and low potassium index align perfectly with sandy-loam drylands suited for organic cotton fibers development.",
+            default: "This optimal match is predicted based on the trained Random Forest classifier. The feature weights indicates this crop will thrive in these conditions."
+        };
+
+        // Form submission
+        document.getElementById('opti-predict-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const loaderSection = document.getElementById('loader-section');
+            const resultSection = document.getElementById('result-section');
+            const predictBtn = document.getElementById('predict-btn');
+            const gaugeRing = document.getElementById('gauge-ring');
+            const resultCrop = document.getElementById('result-crop');
+            const resultConfidence = document.getElementById('result-confidence');
+            const resultExplanation = document.getElementById('result-explanation');
+
+            // Hide old result, show loading states
+            resultSection.style.display = 'none';
+            resultSection.classList.remove('show');
+            loaderSection.style.display = 'flex';
+            predictBtn.disabled = true;
+            predictBtn.style.opacity = '0.7';
+
+            // Gather inputs
+            const payload = new FormData();
+            payload.append('N', document.getElementById('slide-n').value);
+            payload.append('P', document.getElementById('slide-p').value);
+            payload.append('K', document.getElementById('slide-k').value);
+            payload.append('temperature', document.getElementById('slide-temp').value);
+            payload.append('humidity', document.getElementById('slide-humid').value);
+            payload.append('ph', document.getElementById('slide-ph').value);
+            payload.append('rainfall', document.getElementById('slide-rain').value);
+
+            // Simulate slight delay to make AI processing feel authentic
+            setTimeout(() => {
+                fetch('/predict', {
+                    method: 'POST',
+                    body: payload
+                })
+                .then(res => res.json())
+                .then(data => {
+                    loaderSection.style.display = 'none';
+                    predictBtn.disabled = false;
+                    predictBtn.style.opacity = '1';
+
+                    if (data.success) {
+                        resultSection.style.display = 'block';
+                        void resultSection.offsetWidth;
+                        resultSection.classList.add('show');
+
+                        // Set texts
+                        resultCrop.innerHTML = data.crop;
+                        resultConfidence.innerText = data.confidence;
+                        
+                        // Select explanation
+                        const rawCropName = data.raw_crop.toLowerCase();
+                        resultExplanation.innerText = EXPLANATIONS[rawCropName] || EXPLANATIONS.default;
+
+                        // Animate Circular Gauge
+                        const score = parseFloat(data.confidence);
+                        const radius = 54;
+                        const circumference = 2 * Math.PI * radius;
+                        const offset = circumference - (score / 100) * circumference;
+                        gaugeRing.style.strokeDashoffset = offset;
+                    } else {
+                        alert("Error: " + data.error);
+                    }
+                })
+                .catch(err => {
+                    loaderSection.style.display = 'none';
+                    predictBtn.disabled = false;
+                    predictBtn.style.opacity = '1';
+                    console.error(err);
+                    alert("Prediction request failed.");
+                });
+            }, 800);
+        });
+
+        // Run updates on initial load
+        updateNPKWidget();
+    </script>
+</body>
+</html>
